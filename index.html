@@ -112,6 +112,55 @@
       color: #faf9f5;
     }
 
+    /* Password gate */
+    #password-gate {
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #password-gate.gate-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    #password-gate input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #d97757;
+    }
+
+    /* Success celebration */
+    @keyframes celebrate-rise {
+      0% { opacity: 0; transform: translateY(30px) scale(0.9); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .celebrate-rise {
+      animation: celebrate-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(60vh) rotate(720deg); opacity: 0; }
+    }
+    .confetti-piece {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      top: -10px;
+      z-index: 100001;
+      border-radius: 2px;
+      animation: confetti-fall linear forwards;
+    }
+    #gate-shake {
+      animation: none;
+    }
+    #gate-shake.shake {
+      animation: shake 0.4s ease;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+
     /* Agenda timeline connector */
     .timeline-dot {
       width: 12px;
@@ -129,7 +178,88 @@
   </style>
 </head>
 
-<body class="grain font-body antialiased">
+<body class="grain font-body antialiased overflow-hidden">
+
+<!-- ============================================================
+     PASSWORD GATE
+     ============================================================ -->
+<div id="password-gate" class="fixed inset-0 z-[10000] bg-brand-dark flex items-center justify-center">
+  <!-- Background grid -->
+  <div class="absolute inset-0 opacity-[0.04]" style="background-image: linear-gradient(rgba(250,249,245,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(250,249,245,0.3) 1px, transparent 1px); background-size: 60px 60px;"></div>
+
+  <!-- Password prompt (default state) -->
+  <div id="gate-prompt" class="relative z-10 max-w-md w-full mx-6 text-center">
+    <div class="terminal-block bg-brand-dark border border-brand-gray/10 rounded-2xl p-8 sm:p-10 shadow-2xl shadow-black/40">
+      <div class="flex items-center gap-2 mb-6 justify-center">
+        <div class="w-3 h-3 rounded-full bg-[#ff5f57]"></div>
+        <div class="w-3 h-3 rounded-full bg-[#febc2e]"></div>
+        <div class="w-3 h-3 rounded-full bg-[#28c840]"></div>
+      </div>
+
+      <div class="font-mono text-sm text-brand-gray mb-8 text-left">
+        <span class="text-brand-green">~/gmr $</span> <span class="text-brand-light">claude</span> <span class="text-brand-orange">"open workshop"</span><br><br>
+        <span class="text-brand-orange/80">Access required.</span><br>
+        <span class="text-brand-gray/60">Enter the password to continue.<span class="cursor-blink text-brand-orange">|</span></span>
+      </div>
+
+      <div id="gate-shake">
+        <div class="relative">
+          <input
+            type="text"
+            id="gate-password"
+            placeholder="Enter password"
+            autocomplete="off"
+            spellcheck="false"
+            class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-brand-light font-mono text-center text-lg tracking-widest placeholder:text-brand-gray/30 placeholder:tracking-normal placeholder:text-sm transition-all"
+          >
+        </div>
+        <p id="gate-error" class="text-brand-orange/0 text-sm font-heading mt-3 transition-colors">Try again.</p>
+      </div>
+
+      <button
+        id="gate-submit"
+        onclick="checkPassword()"
+        class="w-full mt-2 bg-brand-orange hover:bg-brand-orange/90 text-brand-light font-heading font-bold text-base px-6 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-brand-orange/20"
+      >
+        Enter &rarr;
+      </button>
+    </div>
+
+    <p class="text-brand-gray/20 text-xs font-heading mt-6">GMR x Claude Code Workshop</p>
+  </div>
+
+  <!-- Success message (hidden, shown on correct password) -->
+  <div id="gate-success" class="relative z-10 max-w-lg w-full mx-6 text-center hidden">
+    <div class="celebrate-rise">
+      <div class="w-20 h-20 rounded-full bg-brand-green/20 flex items-center justify-center mx-auto mb-8 border border-brand-green/20">
+        <svg class="w-10 h-10 text-brand-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      </div>
+
+      <h2 class="font-heading font-900 text-4xl sm:text-5xl text-brand-light mb-4 leading-tight">
+        You're in.
+      </h2>
+
+      <p class="text-brand-gray text-lg leading-relaxed max-w-md mx-auto mb-3">
+        You just took the first step toward changing the way you work&mdash;forever.
+      </p>
+
+      <p class="text-brand-light/80 text-base leading-relaxed max-w-md mx-auto mb-8">
+        Two days from now, you'll build things you didn't think were possible. No code required. Just you, your ideas, and a tool that turns them into reality.
+      </p>
+
+      <div class="inline-flex items-center gap-2 bg-brand-orange/10 border border-brand-orange/20 rounded-full px-5 py-2 mb-8">
+        <span class="w-2 h-2 rounded-full bg-brand-orange animate-pulse"></span>
+        <span class="font-heading text-brand-orange text-sm font-medium">Welcome to the future of work at GMR</span>
+      </div>
+
+      <div class="font-mono text-sm text-brand-gray/40 mt-2">
+        <span class="text-brand-green/40">$</span> loading workshop<span class="cursor-blink text-brand-orange/40">|</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ============================================================
      NAVIGATION
@@ -887,6 +1017,70 @@
      SCRIPTS
      ============================================================ -->
 <script>
+  // Password gate
+  const GATE_PASSWORD = 'GMRAI';
+
+  // Allow Enter key to submit
+  document.getElementById('gate-password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') checkPassword();
+  });
+
+  // Auto-focus the input
+  document.getElementById('gate-password').focus();
+
+  function checkPassword() {
+    const input = document.getElementById('gate-password');
+    const value = input.value.trim().toUpperCase();
+
+    if (value === GATE_PASSWORD) {
+      // Correct — show success
+      document.getElementById('gate-prompt').classList.add('hidden');
+      document.getElementById('gate-success').classList.remove('hidden');
+      launchConfetti();
+
+      // After celebration, fade out gate and reveal site
+      setTimeout(() => {
+        document.getElementById('password-gate').classList.add('gate-hidden');
+        document.body.classList.remove('overflow-hidden');
+      }, 3200);
+    } else {
+      // Wrong — shake and show error
+      const shaker = document.getElementById('gate-shake');
+      const error = document.getElementById('gate-error');
+
+      input.value = '';
+      error.classList.remove('text-brand-orange/0');
+      error.classList.add('text-brand-orange');
+
+      shaker.classList.remove('shake');
+      void shaker.offsetWidth; // force reflow
+      shaker.classList.add('shake');
+
+      input.focus();
+    }
+  }
+
+  function launchConfetti() {
+    const colors = ['#d97757', '#6a9bcc', '#788c5d', '#faf9f5', '#e8e6dc'];
+    const count = 60;
+
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      piece.style.animationDelay = (Math.random() * 0.8) + 's';
+      piece.style.width = (6 + Math.random() * 6) + 'px';
+      piece.style.height = (6 + Math.random() * 6) + 'px';
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      document.body.appendChild(piece);
+
+      // Clean up after animation
+      setTimeout(() => piece.remove(), 4000);
+    }
+  }
+
   // Scroll reveal observer
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
