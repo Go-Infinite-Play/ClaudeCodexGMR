@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GMR x Claude Code Workshop — Build Things You Never Thought You Could</title>
+  <meta name="description" content="A two-day hands-on AI workshop for every GMR employee. No coding experience required. Real results expected.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#141413',
+              light: '#faf9f5',
+              gray: '#b0aea5',
+              'light-gray': '#e8e6dc',
+              orange: '#d97757',
+              blue: '#6a9bcc',
+              green: '#788c5d',
+            }
+          },
+          fontFamily: {
+            heading: ['Poppins', 'Arial', 'sans-serif'],
+            body: ['Lora', 'Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Base */
+    html { font-size: 16px; }
+    body { background: #141413; color: #faf9f5; }
+
+    /* Cursor blink */
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .cursor-blink {
+      animation: blink 1s step-end infinite;
+    }
+
+    /* Scroll reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Stagger children */
+    .stagger > .reveal:nth-child(1) { transition-delay: 0ms; }
+    .stagger > .reveal:nth-child(2) { transition-delay: 100ms; }
+    .stagger > .reveal:nth-child(3) { transition-delay: 200ms; }
+    .stagger > .reveal:nth-child(4) { transition-delay: 300ms; }
+    .stagger > .reveal:nth-child(5) { transition-delay: 400ms; }
+
+    /* Terminal scanline */
+    .terminal-block {
+      position: relative;
+      overflow: hidden;
+    }
+    .terminal-block::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(250,249,245,0.015) 2px,
+        rgba(250,249,245,0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Grain overlay */
+    .grain::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Smooth scroll offset for nav */
+    section[id] { scroll-margin-top: 80px; }
+
+    /* Nav backdrop */
+    .nav-blur {
+      backdrop-filter: blur(12px) saturate(120%);
+      -webkit-backdrop-filter: blur(12px) saturate(120%);
+    }
+
+    /* Selection color */
+    ::selection {
+      background: #d97757;
+      color: #faf9f5;
+    }
+
+    /* Agenda timeline connector */
+    .timeline-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #d97757;
+      background: #141413;
+      flex-shrink: 0;
+    }
+    .timeline-line {
+      width: 2px;
+      background: linear-gradient(to bottom, #d97757, #6a9bcc);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body class="grain font-body antialiased">
+
+<!-- ============================================================
+     NAVIGATION
+     ============================================================ -->
+<nav class="fixed top-0 left-0 right-0 z-50 nav-blur bg-brand-dark/80 border-b border-white/5">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="font-heading font-bold text-brand-light tracking-tight">GMR</span>
+      <span class="text-brand-gray text-sm">&times;</span>
+      <span class="font-heading font-bold text-brand-light tracking-tight">Claude Code</span>
+    </div>
+    <div class="hidden md:flex items-center gap-8 text-sm font-heading">
+      <a href="#why-now" class="text-brand-gray hover:text-brand-light transition-colors">Why Now</a>
+      <a href="#what-is-claude" class="text-brand-gray hover:text-brand-light transition-colors">Claude Code</a>
+      <a href="#agenda" class="text-brand-gray hover:text-brand-light transition-colors">Agenda</a>
+      <a href="#who" class="text-brand-gray hover:text-brand-light transition-colors">Who It's For</a>
+      <a href="#hosts" class="text-brand-gray hover:text-brand-light transition-colors">Hosts</a>
+    </div>
+    <a href="mailto:jeremy.olken@omc.com" class="bg-brand-orange hover:bg-brand-orange/90 text-brand-light font-heading font-semibold text-sm px-5 py-2 rounded-full transition-all hover:shadow-lg hover:shadow-brand-orange/20">
+      Get in Touch
+    </a>
+  </div>
+</nav>
+
+<!-- ============================================================
+     SECTION 1: HERO
+     ============================================================ -->
+<section id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+  <!-- Background grid pattern -->
+  <div class="absolute inset-0 opacity-[0.04]" style="background-image: linear-gradient(rgba(250,249,245,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(250,249,245,0.3) 1px, transparent 1px); background-size: 60px 60px;"></div>
+
+  <!-- Floating terminal decoration -->
+  <div class="absolute top-32 right-[10%] hidden lg:block opacity-20 rotate-3">
+    <div class="terminal-block bg-brand-dark border border-brand-gray/20 rounded-lg p-5 font-mono text-sm w-80">
+      <div class="flex gap-2 mb-3">
+        <div class="w-3 h-3 rounded-full bg-brand-orange/60"></div>
+        <div class="w-3 h-3 rounded-full bg-brand-green/60"></div>
+        <div class="w-3 h-3 rounded-full bg-brand-blue/60"></div>
+      </div>
+      <div class="text-brand-gray">
+        <span class="text-brand-green">$</span> claude "Build me a competitive<br>
+        &nbsp;&nbsp;analysis dashboard for our<br>
+        &nbsp;&nbsp;client pitch on Friday"<br><br>
+        <span class="text-brand-orange">Claude</span> On it. I'll create an<br>
+        &nbsp;&nbsp;interactive HTML dashboard<br>
+        &nbsp;&nbsp;with charts comparing...<span class="cursor-blink text-brand-orange">|</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative z-10 max-w-5xl mx-auto px-6 text-center">
+    <div class="reveal">
+      <div class="inline-flex items-center gap-2 bg-brand-orange/10 border border-brand-orange/20 rounded-full px-4 py-1.5 mb-8">
+        <span class="w-2 h-2 rounded-full bg-brand-orange animate-pulse"></span>
+        <span class="font-heading text-brand-orange text-sm font-medium">Two-Day Workshop &middot; Milwaukee &middot; Limited to 30 Seats</span>
+      </div>
+    </div>
+
+    <h1 class="reveal font-heading font-900 text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] tracking-tight mb-6">
+      Build Things<br>You Never Thought<br>
+      <span class="relative inline-block">
+        <span class="relative z-10">You Could</span>
+        <span class="absolute bottom-1 left-0 right-0 h-3 sm:h-4 bg-brand-orange/30 -rotate-1 z-0"></span>
+      </span>
+    </h1>
+
+    <p class="reveal font-body text-xl sm:text-2xl text-brand-gray max-w-2xl mx-auto mb-4 leading-relaxed italic">
+      A two-day hands-on AI workshop for every GMR employee.
+    </p>
+
+    <p class="reveal font-heading text-lg sm:text-xl text-brand-light font-medium mb-10">
+      No coding experience required. Real results expected.
+    </p>
+
+    <div class="reveal flex flex-col sm:flex-row gap-4 justify-center">
+      <a href="#agenda" class="bg-brand-orange hover:bg-brand-orange/90 text-brand-light font-heading font-bold text-lg px-8 py-4 rounded-full transition-all hover:shadow-xl hover:shadow-brand-orange/20 hover:-translate-y-0.5">
+        See the Agenda &darr;
+      </a>
+      <a href="#what-is-claude" class="border border-brand-gray/30 hover:border-brand-gray/60 text-brand-light font-heading font-medium text-lg px-8 py-4 rounded-full transition-all hover:-translate-y-0.5">
+        What Is Claude Code?
+      </a>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-brand-gray/40">
+    <span class="text-xs font-heading uppercase tracking-widest">Scroll</span>
+    <div class="w-px h-8 bg-gradient-to-b from-brand-gray/40 to-transparent"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 2: THE SHIFT (WHY NOW)
+     ============================================================ -->
+<section id="why-now" class="relative py-28 sm:py-36 bg-brand-light text-brand-dark overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal mb-16 max-w-3xl">
+      <span class="font-mono text-brand-orange text-sm tracking-widest uppercase">Why Now</span>
+      <h2 class="font-heading font-800 text-4xl sm:text-5xl lg:text-6xl mt-3 leading-tight">The world changed.<br>Your workflow hasn't.</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 stagger">
+      <!-- Old Way -->
+      <div class="reveal bg-brand-dark/[0.03] border border-brand-dark/10 rounded-2xl p-8">
+        <div class="font-mono text-xs text-brand-gray uppercase tracking-widest mb-4">The Old Way</div>
+        <h3 class="font-heading font-bold text-2xl mb-4 text-brand-dark">Manual by Default</h3>
+        <p class="text-brand-dark/70 leading-relaxed">
+          Competitive audits take days. Microsites wait in dev queues. A one-page brief takes a morning. Tasks that should take minutes take hours&mdash;not because you're slow, but because the tools haven't changed.
+        </p>
+      </div>
+
+      <!-- What Changed -->
+      <div class="reveal bg-brand-dark rounded-2xl p-8 text-brand-light relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-orange/10 rounded-full blur-3xl"></div>
+        <div class="relative z-10">
+          <div class="font-mono text-xs text-brand-orange uppercase tracking-widest mb-4">What Changed</div>
+          <h3 class="font-heading font-bold text-2xl mb-4">AI Crossed a Threshold</h3>
+          <p class="text-brand-gray leading-relaxed">
+            Claude Code isn't a chatbot. It's a hands-on collaborator that reads your files, writes code, and builds real things&mdash;and it works for people who've never written a line of code. You talk. It builds.
+          </p>
+        </div>
+      </div>
+
+      <!-- New Way -->
+      <div class="reveal bg-brand-dark/[0.03] border border-brand-dark/10 rounded-2xl p-8">
+        <div class="font-mono text-xs text-brand-green uppercase tracking-widest mb-4">The New Way</div>
+        <h3 class="font-heading font-bold text-2xl mb-4 text-brand-dark">You Build It Yourself</h3>
+        <p class="text-brand-dark/70 leading-relaxed">
+          A strategist builds her own competitive dashboard. A producer automates event logistics. A creative prototypes three landing pages before lunch. No tickets filed. No dev queue. Just you and your idea.
+        </p>
+      </div>
+    </div>
+
+    <!-- Stat callout -->
+    <div class="reveal mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
+      <div class="flex items-center gap-4">
+        <span class="font-heading font-900 text-5xl sm:text-6xl text-brand-orange">91%</span>
+        <span class="text-brand-dark/60 text-sm max-w-[180px] leading-snug">of agencies are already using AI in their work</span>
+      </div>
+      <div class="hidden sm:block w-px h-12 bg-brand-dark/10"></div>
+      <div class="flex items-center gap-4">
+        <span class="font-heading font-900 text-5xl sm:text-6xl text-brand-blue">35%</span>
+        <span class="text-brand-dark/60 text-sm max-w-[180px] leading-snug">ahead&mdash;agencies lead their clients in AI adoption</span>
+      </div>
+    </div>
+
+    <p class="reveal text-center text-brand-dark/50 text-sm mt-6 font-heading">The gap widens every quarter. The question isn't <em>if</em>&mdash;it's <em>when you start</em>.</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 3: WHAT IS CLAUDE CODE?
+     ============================================================ -->
+<section id="what-is-claude" class="relative py-28 sm:py-36 overflow-hidden">
+  <!-- Subtle grid -->
+  <div class="absolute inset-0 opacity-[0.03]" style="background-image: linear-gradient(rgba(250,249,245,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(250,249,245,0.4) 1px, transparent 1px); background-size: 40px 40px;"></div>
+
+  <div class="relative z-10 max-w-6xl mx-auto px-6">
+    <div class="grid lg:grid-cols-2 gap-16 items-center">
+      <!-- Text side -->
+      <div>
+        <div class="reveal">
+          <span class="font-mono text-brand-orange text-sm tracking-widest uppercase">The Tool</span>
+          <h2 class="font-heading font-800 text-4xl sm:text-5xl mt-3 mb-6 leading-tight">What Is<br>Claude Code?</h2>
+        </div>
+        <div class="reveal space-y-4 text-brand-gray text-lg leading-relaxed">
+          <p>
+            Think of Claude Code as a brilliant colleague who lives inside your terminal. You describe what you want in plain English&mdash;"turn this messy spreadsheet into a client-ready dashboard"&mdash;and it does the work.
+          </p>
+          <p>
+            It reads your files. It writes code. It builds websites, automates reports, generates content, and creates tools tailored to your exact workflow. Built by Anthropic, the same team behind Claude AI, it's the most capable coding assistant available today.
+          </p>
+          <p class="text-brand-light font-medium">
+            You don't need to know how to code. You need to know how to describe what you want. That's it.
+          </p>
+        </div>
+      </div>
+
+      <!-- Terminal demo side -->
+      <div class="reveal">
+        <div class="terminal-block bg-brand-dark border border-brand-gray/10 rounded-2xl p-6 sm:p-8 font-mono text-sm shadow-2xl shadow-black/30">
+          <div class="flex items-center gap-2 mb-5">
+            <div class="w-3 h-3 rounded-full bg-[#ff5f57]"></div>
+            <div class="w-3 h-3 rounded-full bg-[#febc2e]"></div>
+            <div class="w-3 h-3 rounded-full bg-[#28c840]"></div>
+            <span class="ml-3 text-brand-gray/40 text-xs">claude-code</span>
+          </div>
+
+          <div class="space-y-4 text-brand-gray">
+            <div>
+              <span class="text-brand-green">~/gmr/project $</span> <span class="text-brand-light">claude</span>
+            </div>
+            <div class="text-brand-light/80">
+              &gt; Take this CSV of event data and build me an<br>
+              &nbsp;&nbsp;interactive dashboard with charts showing<br>
+              &nbsp;&nbsp;attendance trends and top-performing activations
+            </div>
+            <div class="border-l-2 border-brand-orange/50 pl-4 text-brand-orange/80">
+              I'll analyze your CSV and create an interactive<br>
+              HTML dashboard. Let me:<br><br>
+              <span class="text-brand-gray/60">1.</span> Parse the event data (847 rows)<br>
+              <span class="text-brand-gray/60">2.</span> Generate attendance trend charts<br>
+              <span class="text-brand-gray/60">3.</span> Rank activations by performance<br>
+              <span class="text-brand-gray/60">4.</span> Build a filterable dashboard<span class="cursor-blink text-brand-orange">|</span>
+            </div>
+            <div class="text-brand-green/60 text-xs">
+              &#10003; Created dashboard.html (interactive, mobile-ready)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proof points -->
+    <div class="grid sm:grid-cols-3 gap-6 mt-20 stagger">
+      <div class="reveal text-center sm:text-left bg-white/[0.03] border border-white/5 rounded-xl p-6">
+        <div class="font-heading font-900 text-4xl text-brand-orange mb-2">81%</div>
+        <div class="text-brand-gray text-sm">faster competitive audits with Claude Code-built analysis tools</div>
+      </div>
+      <div class="reveal text-center sm:text-left bg-white/[0.03] border border-white/5 rounded-xl p-6">
+        <div class="font-heading font-900 text-4xl text-brand-blue mb-2">75%</div>
+        <div class="text-brand-gray text-sm">time savings on repeatable tasks like reports, formatting, and data pulls</div>
+      </div>
+      <div class="reveal text-center sm:text-left bg-white/[0.03] border border-white/5 rounded-xl p-6">
+        <div class="font-heading font-900 text-4xl text-brand-green mb-2">$1,200+</div>
+        <div class="text-brand-gray text-sm">estimated monthly savings per client from automated workflows</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 4: TWO-DAY AGENDA
+     ============================================================ -->
+<section id="agenda" class="relative py-28 sm:py-36 bg-brand-light text-brand-dark overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal mb-16 max-w-3xl">
+      <span class="font-mono text-brand-orange text-sm tracking-widest uppercase">The Experience</span>
+      <h2 class="font-heading font-800 text-4xl sm:text-5xl lg:text-6xl mt-3 leading-tight">Two Days.<br>Zero to Builder.</h2>
+      <p class="text-brand-dark/60 text-lg mt-4 max-w-xl">Day 1 you learn by doing. Day 2 you prove it in a hackathon. You leave with a skill you'll use every day.</p>
+    </div>
+
+    <!-- Day 1 -->
+    <div class="reveal mb-20">
+      <div class="flex items-center gap-4 mb-8">
+        <span class="bg-brand-orange text-brand-light font-heading font-bold text-sm px-4 py-1.5 rounded-full">Day 1</span>
+        <h3 class="font-heading font-bold text-2xl sm:text-3xl text-brand-dark">"Learn by Doing"</h3>
+      </div>
+
+      <div class="grid gap-3">
+        <!-- Day 1 agenda items -->
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-orange/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">8:30 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-orange transition-colors">Doors Open</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Coffee, breakfast, and your icebreaker: <em>"What's one thing you wish AI could do for your job?"</em></div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-orange/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">9:00 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-orange transition-colors">Opening: Why We're Here</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Jeremy &amp; Corban set the stage. The "why now" narrative. By end of tomorrow, you'll have built something real.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-orange/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">9:15 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-orange transition-colors">What Is Claude Code? (Live Demo)</div>
+            <div class="text-brand-dark/50 text-sm mt-1">From a blank terminal to building real artifacts in minutes. See how plain English becomes working tools.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-orange/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">9:35 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-orange transition-colors">Setup: Get It Running</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Guided installation with hands-on support. Troubleshooting checkpoints every 10 minutes. Success = your first "hello world."</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-brand-dark/[0.02] rounded-xl p-5 border border-dashed border-brand-dark/10">
+          <div class="font-mono text-sm text-brand-gray font-medium w-20 shrink-0 pt-0.5">10:15</div>
+          <div class="font-heading text-brand-dark/40 text-sm">Break &middot; 15 min</div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-orange/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">10:30 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-orange transition-colors">Core Skills Workshop (3 Modules)</div>
+            <div class="text-brand-dark/50 text-sm mt-1">
+              <strong>A:</strong> Conversations &amp; context&mdash;giving good instructions. <strong>B:</strong> File operations&mdash;reading, writing, editing. <strong>C:</strong> Building things&mdash;HTML pages, data scripts, docs. Each: 5 min explain + 15 min hands-on.
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-orange/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">11:30 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-orange transition-colors">Real-World GMR Use Cases</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Live demos: messy brief &rarr; structured plan. CSV data &rarr; visualization. Copy generation for activations. Then you try.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-brand-dark/[0.02] rounded-xl p-5 border border-dashed border-brand-dark/10">
+          <div class="font-mono text-sm text-brand-gray font-medium w-20 shrink-0 pt-0.5">12:00</div>
+          <div class="font-heading text-brand-dark/40 text-sm">Lunch &middot; 60 min &middot; Table talk: <em>"What surprised you? What would you build?"</em></div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-orange/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">1:00 PM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-orange transition-colors">Guided Build: Your First Real Project</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Build a personalized event landing page from scratch using Claude Code. Text description &rarr; HTML/CSS &rarr; customize &rarr; interactive elements. Checkpoints every 20 min.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-brand-dark/[0.02] rounded-xl p-5 border border-dashed border-brand-dark/10">
+          <div class="font-mono text-sm text-brand-gray font-medium w-20 shrink-0 pt-0.5">2:30</div>
+          <div class="font-heading text-brand-dark/40 text-sm">Break &middot; 15 min</div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-blue/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-blue font-medium w-20 shrink-0 pt-0.5">2:45 PM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-blue transition-colors">Choose Your Track (75 min)</div>
+            <div class="text-brand-dark/50 text-sm mt-1">
+              Pick your path: <strong>Strategy &amp; Analysis</strong> (competitive analysis tool), <strong>Creative &amp; Content</strong> (multi-format content workflow), <strong>Production &amp; Ops</strong> (event logistics automation), or <strong>Client &amp; Account</strong> (report generator).
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-green/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-green font-medium w-20 shrink-0 pt-0.5">4:00 PM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-green transition-colors">Share-Outs</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Volunteers from each track show what they built. <em>"You built this in 75 minutes. None of you are engineers."</em></div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-orange/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">4:30 PM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-orange transition-colors">Hackathon Challenge Reveal</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Day 2's challenge drops. Teams of 2-3 form. 15 minutes to brainstorm. Judging: Practicality 30% &middot; Creativity 25% &middot; Execution 25% &middot; Presentation 20%.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 2 -->
+    <div class="reveal">
+      <div class="flex items-center gap-4 mb-8">
+        <span class="bg-brand-blue text-brand-light font-heading font-bold text-sm px-4 py-1.5 rounded-full">Day 2</span>
+        <h3 class="font-heading font-bold text-2xl sm:text-3xl text-brand-dark">"Prove It" &mdash; The Hackathon</h3>
+      </div>
+
+      <div class="grid gap-3">
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-blue/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-blue font-medium w-20 shrink-0 pt-0.5">8:30 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-blue transition-colors">Doors Open</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Teams claim tables. Sticky notes, markers, whiteboards. Competitive energy in the air.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-blue/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-blue font-medium w-20 shrink-0 pt-0.5">9:00 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-blue transition-colors">Hackathon Kickoff</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Challenge re-stated. Rules set. <em>"Start with the simplest working version."</em> Timer on screen. Judges announced.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-blue/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-blue font-medium w-20 shrink-0 pt-0.5">9:15 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-blue transition-colors">Build Sprint 1 (90 min)</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Heads down. Facilitators circulate for support. Pulse check at the 60-minute mark.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-brand-dark/[0.02] rounded-xl p-5 border border-dashed border-brand-dark/10">
+          <div class="font-mono text-sm text-brand-gray font-medium w-20 shrink-0 pt-0.5">10:45</div>
+          <div class="font-heading text-brand-dark/40 text-sm">Break &middot; 15 min</div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-blue/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-blue font-medium w-20 shrink-0 pt-0.5">11:00 AM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-blue transition-colors">Build Sprint 2 (60 min)</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Continue building. At 11:30: <em>"30 minutes left. Start thinking about your presentation."</em> Presentation template shared.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-brand-dark/[0.02] rounded-xl p-5 border border-dashed border-brand-dark/10">
+          <div class="font-mono text-sm text-brand-gray font-medium w-20 shrink-0 pt-0.5">12:00</div>
+          <div class="font-heading text-brand-dark/40 text-sm">Working lunch &middot; 45 min &middot; Pencils down at 12:30&mdash;last 15 min is prep only</div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-blue/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-blue font-medium w-20 shrink-0 pt-0.5">12:45 PM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-blue transition-colors">Presentations (~60 min)</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Each team: 3 min present + 2 min Q&amp;A with judges. Format: Problem (30s) &rarr; Demo (90s) &rarr; Impact (30s) &rarr; Future (30s).</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-white rounded-xl p-5 border border-brand-dark/5 hover:border-brand-blue/20 transition-colors group">
+          <div class="font-mono text-sm text-brand-blue font-medium w-20 shrink-0 pt-0.5">1:45 PM</div>
+          <div>
+            <div class="font-heading font-semibold text-brand-dark group-hover:text-brand-blue transition-colors">Deliberation &amp; People's Choice</div>
+            <div class="text-brand-dark/50 text-sm mt-1">Judges deliberate. Everyone votes for People's Choice. Mingle and celebrate what you built.</div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-start bg-brand-dark rounded-xl p-5 text-brand-light group">
+          <div class="font-mono text-sm text-brand-orange font-medium w-20 shrink-0 pt-0.5">2:00 PM</div>
+          <div>
+            <div class="font-heading font-semibold group-hover:text-brand-orange transition-colors">Awards &amp; Closing</div>
+            <div class="text-brand-gray text-sm mt-1">
+              <strong class="text-brand-orange">Grand Prize</strong> &middot; <strong class="text-brand-blue">Most Practical</strong> ("most likely to use Monday morning") &middot; <strong class="text-brand-green">Most Creative</strong> &middot; <strong class="text-brand-light">People's Choice</strong>. Closing remarks, next steps, and ongoing resources.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 5: WHO THIS IS FOR
+     ============================================================ -->
+<section id="who" class="relative py-28 sm:py-36 overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal mb-6 max-w-3xl">
+      <span class="font-mono text-brand-orange text-sm tracking-widest uppercase">For You</span>
+      <h2 class="font-heading font-800 text-4xl sm:text-5xl lg:text-6xl mt-3 leading-tight">Designed for People Who<br>Do <em>Not</em> Write Code</h2>
+    </div>
+    <p class="reveal text-brand-gray text-lg max-w-2xl mb-16">
+      If you can describe what you need, you can build it. This workshop meets you where you are&mdash;whatever your role.
+    </p>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 stagger">
+      <!-- Strategists -->
+      <div class="reveal bg-white/[0.03] border border-white/5 rounded-2xl p-7 hover:border-brand-orange/30 transition-all hover:-translate-y-1 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center mb-5 group-hover:bg-brand-orange/20 transition-colors">
+          <svg class="w-6 h-6 text-brand-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-1.5L12 12m0 0l3-1.5M12 12l-3-1.5m0 3l3-1.5" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-xl text-brand-light mb-2">Strategists</h3>
+        <p class="text-brand-gray text-sm leading-relaxed">
+          Build competitive analysis dashboards, automate research synthesis, and turn raw data into visual stories&mdash;in minutes, not days.
+        </p>
+      </div>
+
+      <!-- Creatives -->
+      <div class="reveal bg-white/[0.03] border border-white/5 rounded-2xl p-7 hover:border-brand-blue/30 transition-all hover:-translate-y-1 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-blue/10 flex items-center justify-center mb-5 group-hover:bg-brand-blue/20 transition-colors">
+          <svg class="w-6 h-6 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-xl text-brand-light mb-2">Creatives</h3>
+        <p class="text-brand-gray text-sm leading-relaxed">
+          Prototype landing pages, generate copy variations, and build interactive concepts&mdash;test three ideas before lunch instead of waiting on a ticket.
+        </p>
+      </div>
+
+      <!-- Producers -->
+      <div class="reveal bg-white/[0.03] border border-white/5 rounded-2xl p-7 hover:border-brand-green/30 transition-all hover:-translate-y-1 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-green/10 flex items-center justify-center mb-5 group-hover:bg-brand-green/20 transition-colors">
+          <svg class="w-6 h-6 text-brand-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-xl text-brand-light mb-2">Producers</h3>
+        <p class="text-brand-gray text-sm leading-relaxed">
+          Automate event logistics, generate run-of-show documents, and build tracking tools&mdash;spend time managing experiences, not spreadsheets.
+        </p>
+      </div>
+
+      <!-- Account Teams -->
+      <div class="reveal bg-white/[0.03] border border-white/5 rounded-2xl p-7 hover:border-brand-orange/30 transition-all hover:-translate-y-1 group">
+        <div class="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center mb-5 group-hover:bg-brand-orange/20 transition-colors">
+          <svg class="w-6 h-6 text-brand-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-xl text-brand-light mb-2">Account Teams</h3>
+        <p class="text-brand-gray text-sm leading-relaxed">
+          Generate polished client reports, automate recap documents, and create personalized presentation decks&mdash;impress clients, not your printer.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 6: WHAT YOU'LL BUILD
+     ============================================================ -->
+<section id="build" class="relative py-28 sm:py-36 bg-brand-light text-brand-dark overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal mb-16 max-w-3xl">
+      <span class="font-mono text-brand-orange text-sm tracking-widest uppercase">Real Output</span>
+      <h2 class="font-heading font-800 text-4xl sm:text-5xl lg:text-6xl mt-3 leading-tight">What You'll Actually Build</h2>
+      <p class="text-brand-dark/60 text-lg mt-4 max-w-xl">These aren't hypotheticals. These are projects attendees will complete during the workshop.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-6 stagger">
+      <!-- Project 1 -->
+      <div class="reveal bg-white rounded-2xl overflow-hidden border border-brand-dark/5 hover:shadow-xl transition-all group">
+        <div class="bg-brand-dark p-6 font-mono text-sm text-brand-gray">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-3 h-3 rounded-full bg-brand-orange/60"></div>
+            <div class="w-3 h-3 rounded-full bg-brand-green/60"></div>
+            <div class="w-3 h-3 rounded-full bg-brand-blue/60"></div>
+          </div>
+          <span class="text-brand-green">$</span> <span class="text-brand-light">claude</span> "Build a competitive analysis<br>&nbsp;&nbsp;dashboard from this market data"<br>
+          <span class="text-brand-green/60 mt-2 block">&#10003; dashboard.html created</span>
+        </div>
+        <div class="p-6">
+          <h3 class="font-heading font-bold text-xl text-brand-dark mb-2">Competitive Analysis Dashboard</h3>
+          <p class="text-brand-dark/60 text-sm leading-relaxed">Turn raw market data into an interactive, filterable dashboard with charts and comparisons. What used to take days of analyst time, built in one session.</p>
+        </div>
+      </div>
+
+      <!-- Project 2 -->
+      <div class="reveal bg-white rounded-2xl overflow-hidden border border-brand-dark/5 hover:shadow-xl transition-all group">
+        <div class="bg-brand-dark p-6 font-mono text-sm text-brand-gray">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-3 h-3 rounded-full bg-brand-orange/60"></div>
+            <div class="w-3 h-3 rounded-full bg-brand-green/60"></div>
+            <div class="w-3 h-3 rounded-full bg-brand-blue/60"></div>
+          </div>
+          <span class="text-brand-green">$</span> <span class="text-brand-light">claude</span> "Create a landing page for<br>&nbsp;&nbsp;our client's product launch event"<br>
+          <span class="text-brand-green/60 mt-2 block">&#10003; event-page.html created</span>
+        </div>
+        <div class="p-6">
+          <h3 class="font-heading font-bold text-xl text-brand-dark mb-2">Event Landing Page</h3>
+          <p class="text-brand-dark/60 text-sm leading-relaxed">Design and build a responsive, branded landing page with registration form, countdown timer, and interactive elements&mdash;no dev team required.</p>
+        </div>
+      </div>
+
+      <!-- Project 3 -->
+      <div class="reveal bg-white rounded-2xl overflow-hidden border border-brand-dark/5 hover:shadow-xl transition-all group">
+        <div class="bg-brand-dark p-6 font-mono text-sm text-brand-gray">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-3 h-3 rounded-full bg-brand-orange/60"></div>
+            <div class="w-3 h-3 rounded-full bg-brand-green/60"></div>
+            <div class="w-3 h-3 rounded-full bg-brand-blue/60"></div>
+          </div>
+          <span class="text-brand-green">$</span> <span class="text-brand-light">claude</span> "Generate a multi-format content<br>&nbsp;&nbsp;package from this creative brief"<br>
+          <span class="text-brand-green/60 mt-2 block">&#10003; 6 assets generated</span>
+        </div>
+        <div class="p-6">
+          <h3 class="font-heading font-bold text-xl text-brand-dark mb-2">Multi-Format Content Engine</h3>
+          <p class="text-brand-dark/60 text-sm leading-relaxed">Feed in a brief, get back social copy, email drafts, talking points, and ad variations&mdash;all formatted and ready for review.</p>
+        </div>
+      </div>
+
+      <!-- Project 4 -->
+      <div class="reveal bg-white rounded-2xl overflow-hidden border border-brand-dark/5 hover:shadow-xl transition-all group">
+        <div class="bg-brand-dark p-6 font-mono text-sm text-brand-gray">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-3 h-3 rounded-full bg-brand-orange/60"></div>
+            <div class="w-3 h-3 rounded-full bg-brand-green/60"></div>
+            <div class="w-3 h-3 rounded-full bg-brand-blue/60"></div>
+          </div>
+          <span class="text-brand-green">$</span> <span class="text-brand-light">claude</span> "Automate our event logistics<br>&nbsp;&nbsp;tracking from this spreadsheet"<br>
+          <span class="text-brand-green/60 mt-2 block">&#10003; logistics-tool.html created</span>
+        </div>
+        <div class="p-6">
+          <h3 class="font-heading font-bold text-xl text-brand-dark mb-2">Event Logistics Automation</h3>
+          <p class="text-brand-dark/60 text-sm leading-relaxed">Transform a messy event spreadsheet into a clean tracking tool with status indicators, timelines, and automated checklists.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 7: YOUR HOSTS
+     ============================================================ -->
+<section id="hosts" class="relative py-28 sm:py-36 overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal mb-16 text-center">
+      <span class="font-mono text-brand-orange text-sm tracking-widest uppercase">Your Guides</span>
+      <h2 class="font-heading font-800 text-4xl sm:text-5xl mt-3">Your Hosts</h2>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto stagger">
+      <!-- Jeremy -->
+      <div class="reveal bg-white/[0.03] border border-white/5 rounded-2xl p-8 hover:border-brand-orange/20 transition-all">
+        <div class="flex items-center gap-5 mb-5">
+          <div class="w-20 h-20 rounded-full bg-gradient-to-br from-brand-orange/30 to-brand-orange/5 flex items-center justify-center border border-brand-orange/20">
+            <span class="font-heading font-bold text-2xl text-brand-orange">JO</span>
+          </div>
+          <div>
+            <h3 class="font-heading font-bold text-xl text-brand-light">Jeremy Olken</h3>
+            <p class="text-brand-orange font-heading text-sm">VP, AI Products</p>
+          </div>
+        </div>
+        <p class="text-brand-gray leading-relaxed">
+          Jeremy leads AI product development at GMR, working at the intersection of marketing strategy and emerging technology. He's spent the last year embedding Claude Code into real agency workflows&mdash;finding the use cases that actually save time, not just demo well. He'll meet you where you are and show you what's possible.
+        </p>
+      </div>
+
+      <!-- Corban -->
+      <div class="reveal bg-white/[0.03] border border-white/5 rounded-2xl p-8 hover:border-brand-blue/20 transition-all">
+        <div class="flex items-center gap-5 mb-5">
+          <div class="w-20 h-20 rounded-full bg-gradient-to-br from-brand-blue/30 to-brand-blue/5 flex items-center justify-center border border-brand-blue/20">
+            <span class="font-heading font-bold text-2xl text-brand-blue">CB</span>
+          </div>
+          <div>
+            <h3 class="font-heading font-bold text-xl text-brand-light">Corban Baxter</h3>
+            <p class="text-brand-blue font-heading text-sm">EVP, Technology</p>
+          </div>
+        </div>
+        <p class="text-brand-gray leading-relaxed">
+          Corban oversees GMR's technology strategy and has been building digital experiences for two decades. He bridges the gap between what engineers know and what the rest of us need to know. His goal for this workshop: make sure you leave with something you'll actually use on Monday morning.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 8: LOGISTICS
+     ============================================================ -->
+<section id="logistics" class="relative py-28 sm:py-36 bg-brand-light text-brand-dark overflow-hidden">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="reveal mb-16 max-w-3xl">
+      <span class="font-mono text-brand-orange text-sm tracking-widest uppercase">Details</span>
+      <h2 class="font-heading font-800 text-4xl sm:text-5xl mt-3 leading-tight">The Practical Stuff</h2>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 stagger">
+      <div class="reveal bg-white rounded-2xl p-7 border border-brand-dark/5">
+        <div class="w-10 h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-brand-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-dark mb-1">When</h3>
+        <p class="text-brand-dark/60 text-sm leading-relaxed">Two full days, dates TBD. Day 1: 8:30 AM&ndash;5:00 PM. Day 2: 8:30 AM&ndash;2:30 PM.</p>
+      </div>
+
+      <div class="reveal bg-white rounded-2xl p-7 border border-brand-dark/5">
+        <div class="w-10 h-10 rounded-lg bg-brand-blue/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-brand-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-dark mb-1">Where</h3>
+        <p class="text-brand-dark/60 text-sm leading-relaxed">Milwaukee, WI. Venue TBD&mdash;we'll share the exact location once confirmed.</p>
+      </div>
+
+      <div class="reveal bg-white rounded-2xl p-7 border border-brand-dark/5">
+        <div class="w-10 h-10 rounded-lg bg-brand-green/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-brand-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-dark mb-1">Bring</h3>
+        <p class="text-brand-dark/60 text-sm leading-relaxed">Your laptop and your curiosity. That's it. We'll handle the rest.</p>
+      </div>
+
+      <div class="reveal bg-white rounded-2xl p-7 border border-brand-dark/5">
+        <div class="w-10 h-10 rounded-lg bg-brand-orange/10 flex items-center justify-center mb-4">
+          <svg class="w-5 h-5 text-brand-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5m-6 1.5v-1.5m12 9.75l-1.5.75a3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0 3.354 3.354 0 00-3 0 3.354 3.354 0 01-3 0L3 16.5m15-3.379a48.474 48.474 0 00-6-.371c-2.032 0-4.034.126-6 .371m12 0c.39.049.777.102 1.163.16 1.07.16 1.837 1.094 1.837 2.175v5.169c0 .621-.504 1.125-1.125 1.125H4.125A1.125 1.125 0 013 20.625v-5.17c0-1.08.768-2.014 1.837-2.174A47.78 47.78 0 016 13.12M12.265 3.11a.375.375 0 11-.53 0L12 2.845l.265.265zm-3 0a.375.375 0 11-.53 0L9 2.845l.265.265zm6 0a.375.375 0 11-.53 0L15 2.845l.265.265z" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-dark mb-1">We Provide</h3>
+        <p class="text-brand-dark/60 text-sm leading-relaxed">Breakfast, lunch, all-day coffee, and every material you need. Just show up ready to build.</p>
+      </div>
+    </div>
+
+    <div class="reveal mt-10 text-center">
+      <p class="text-brand-dark/40 text-sm font-heading">Limited to 25-30 seats. Details coming soon.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 9: QUESTIONS / CONTACT
+     ============================================================ -->
+<section id="contact" class="relative py-28 sm:py-36 overflow-hidden">
+  <!-- Background accent -->
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-brand-orange/5 rounded-full blur-[120px]"></div>
+
+  <div class="relative z-10 max-w-2xl mx-auto px-6 text-center">
+    <div class="reveal">
+      <span class="font-mono text-brand-orange text-sm tracking-widest uppercase">Questions?</span>
+      <h2 class="font-heading font-800 text-4xl sm:text-5xl mt-3 leading-tight">Curious? Let's Talk.</h2>
+      <p class="text-brand-gray text-lg mt-4 max-w-lg mx-auto">Have questions about the workshop, the agenda, or whether this is right for you? Reach out&mdash;happy to chat.</p>
+    </div>
+
+    <div class="reveal mt-10">
+      <a href="mailto:jeremy.olken@omc.com" class="inline-flex items-center gap-3 bg-brand-orange hover:bg-brand-orange/90 text-brand-light font-heading font-bold text-lg px-8 py-4 rounded-full transition-all hover:shadow-xl hover:shadow-brand-orange/20 hover:-translate-y-0.5">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+        </svg>
+        Email Jeremy Olken
+      </a>
+      <p class="text-brand-gray/50 text-sm mt-4 font-mono">jeremy.olken@omc.com</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 10: FOOTER
+     ============================================================ -->
+<footer class="relative py-16 border-t border-white/5">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-8">
+      <!-- Co-branding -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <span class="font-heading font-bold text-xl text-brand-light tracking-tight">GMR</span>
+          <span class="font-heading font-light text-brand-gray text-sm">Marketing</span>
+        </div>
+        <div class="w-px h-6 bg-brand-gray/20"></div>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-brand-orange" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h2v-2h-2v2zm0-4h2V7h-2v6z"/>
+          </svg>
+          <span class="font-heading font-bold text-brand-light">Claude</span>
+          <span class="font-heading font-light text-brand-gray text-sm">by Anthropic</span>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div class="text-center sm:text-right">
+        <p class="text-brand-gray/60 text-sm font-heading">Questions? <a href="mailto:jeremy.olken@omc.com" class="text-brand-orange hover:text-brand-orange/80 transition-colors">jeremy.olken@omc.com</a></p>
+        <p class="text-brand-gray/40 text-xs mt-1 font-heading">&copy; 2025 GMR Marketing. All rights reserved.</p>
+      </div>
+    </div>
+
+    <!-- Decorative terminal line -->
+    <div class="mt-10 pt-6 border-t border-white/5 text-center">
+      <p class="font-mono text-xs text-brand-gray/20">
+        <span class="text-brand-green/30">$</span> claude "Build things you never thought you could" <span class="cursor-blink text-brand-orange/30">|</span>
+      </p>
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<script>
+  // Scroll reveal observer
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, {
+    threshold: 0.1,
+    rootMargin: '0px 0px -40px 0px'
+  });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop - 100;
+      if (window.scrollY >= sectionTop) {
+        current = section.getAttribute('id');
+      }
+    });
+    navLinks.forEach(link => {
+      link.classList.remove('text-brand-light');
+      if (link.getAttribute('href') === `#${current}`) {
+        link.classList.add('text-brand-light');
+      }
+    });
+  });
+
+</script>
+
+</body>
+</html>
